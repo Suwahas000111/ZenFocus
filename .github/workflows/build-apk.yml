@@ -9,32 +9,41 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v6
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
+      - name: Setup Java
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: '8.9'
 
-      - name: Extract ZenFocus project
-        run: unzip -q ZenFocus_Hybrid_Original_UI.zip -d .
+      - name: Show repository files
+        run: ls -la
+
+      - name: Extract project
+        run: unzip -q ZenFocus_Hybrid_Original_UI.zip -d extracted
+
+      - name: Find Gradle project
+        run: find extracted -name settings.gradle.kts -o -name settings.gradle
 
       - name: Build APK
-        run: gradle -p zenfocus_hybrid assembleDebug
+        run: |
+          PROJECT_DIR=$(dirname "$(find extracted -name settings.gradle.kts -o -name settings.gradle | head -n 1)")
+          echo "Project directory: $PROJECT_DIR"
+          gradle -p "$PROJECT_DIR" assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: ZenFocus-APK
-          path: zenfocus_hybrid/app/build/outputs/apk/debug/*.apk
+          path: extracted/**/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
